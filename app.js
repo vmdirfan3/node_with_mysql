@@ -73,8 +73,8 @@ app.post("/postUser", (req, res) => {
     properties: {
         Name: { type: 'string', minLength: 3 },
         Education: { type: 'string',},
-        MobileNo: { type: 'integer',minimum:0},
-        Age: { type: 'integer', minimum: 0,maxLength:3,maximum:100},
+        MobileNo: { type: 'string',minimum:0},
+        Age: { type: 'string', minimum: 0,maxLength:3,maximum:100},
     },
     required: ['Name', 'Education','MobileNo','Age'],
 };
@@ -83,7 +83,7 @@ app.post("/postUser", (req, res) => {
     if(isValid){
         connection.query(
             `INSERT INTO Users (Name, Age, Education, MobileNo) VALUES (?, ?, ?, ?)`,
-            [Name, Age, Education, MobileNo],
+            [Name, parseInt(Age), Education, parseInt(MobileNo)],
             (err, response) => {
               if (err) {
                 console.log(err);
