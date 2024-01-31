@@ -40,9 +40,8 @@ const port = 8080;
 const connection = require("./index");
 var multer = require("multer");
 const Ajv = require('ajv');
+const path = require('path');
 const ajv = new Ajv();
-var upload = multer();
-app.use(upload.array());
 app.use(express.json());
 
 app.use(function (req, res, next) {
@@ -63,11 +62,46 @@ app.get("/getUser", (req, res) => {
   });
 });
 
-app.post("/postUser", (req, res) => {
+// Configure Multer
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, 'uploads/'); // Specify the destination directory
+  },
+  filename: (req, file, cb) => {
+      cb(null, Date.now() + '-' + file.originalname); // Generate a unique filename
+  }
+});
+
+const upload = multer({ storage: storage });
+const uploadsPath = path.join(__dirname, 'uploads');
+console.log('uploadsPath:', uploadsPath);
+app.use('/uploads', (req, res, next) => {
+  const fileExtension = path.extname(req.url).toLowerCase();
+
+  // Set the correct content type based on the file extension
+  switch (fileExtension) {
+    case '.png':
+      res.type('image/png');
+      break;
+    case '.jpg':
+    case '.jpeg':
+      res.type('image/jpeg');
+      break;
+    default:
+      res.type('application/octet-stream');
+  }
+
+  res.setHeader('Content-Disposition', `inline; filename=image${fileExtension}`);
+
+  next();
+}, express.static(uploadsPath));
+app.post("/postUser", upload.single('image'),(req, res) => {
   const Name = req.body.Name;
   const Age = req.body.Age;
   const Education = req.body.Education;
   const MobileNo = req.body.MobileNo;
+  const imageUrl = req.get('host')+'/'+req.file.path;
   const schema = {
     type: 'object',
     properties: {
@@ -75,31 +109,41 @@ app.post("/postUser", (req, res) => {
         Education: { type: 'string',},
         MobileNo: { type: 'string',minimum:0},
         Age: { type: 'string', minimum: 0,maxLength:3,maximum:100},
+    
     },
     required: ['Name', 'Education','MobileNo','Age'],
 };
     const validate = ajv.compile(schema);
     const isValid = validate(req.body)
-    if(isValid){
+    if(req.file ==null){
+      res.send({
+        message:'Validation failed',
+        error: {
+          Error: 'Image Is Required'
+        }
+    })
+    }else if(isValid){
+      console.log(req.file.path)
         connection.query(
-            `INSERT INTO Users (Name, Age, Education, MobileNo) VALUES (?, ?, ?, ?)`,
-            [Name, parseInt(Age), Education, parseInt(MobileNo)],
+            `INSERT INTO Users (Name, Age, Education, MobileNo,imageUrl) VALUES (?, ?, ?, ?,?)`,
+            [Name, parseInt(Age), Education, parseInt(MobileNo),imageUrl],
             (err, response) => {
               if (err) {
                 console.log(err);
                 res.send(JSON.stringify(err));
               } else {
+                req.body.imageUrl=imageUrl
                 const responseObj = {
                   comment: "User created successfully",
                   requestBody: req.body, // Include the request body in the response
                 };
-                res.send(JSON.stringify(responseObj));
+                res.json(responseObj);
               }
             }
           );
     }else{
         res.send({
-            message:'Error',
+            message:'Validation failed',
             error: validate.errors
         })
     }
