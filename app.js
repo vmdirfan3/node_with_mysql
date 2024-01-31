@@ -55,7 +55,7 @@ app.get("/", (req, res) => {
 app.get("/getUser", (req, res) => {
   connection.query(`select * from Users`, function (err, result) {
     if (err) {
-      res.send("Somthing went wrong");
+      res.json(err);
     } else {
       res.send(JSON.stringify(result));
     }
