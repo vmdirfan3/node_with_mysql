@@ -1,0 +1,13 @@
+const connect = require("../index")
+
+const authList = connect.query('Select * from authUser',function(err,res){
+    if (err) {
+        res.json(err);
+      } else {
+        res.send(JSON.stringify(result));
+      }
+})
+
+module.exports = authList
+
+

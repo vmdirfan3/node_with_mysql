@@ -1,0 +1,35 @@
+const http = require('http')
+const port = 8080
+const connection = require('./index')
+
+// Create a server object:
+const server = http.createServer(function (req, res) {
+    console.log(req.url)
+
+    // Write a response to the client
+   const data = connection.query(`select * from Users`,
+            function (err, result) {
+                if (err)
+                    console.log(`Error executing the query - ${err}`)
+                else
+                    console.log("Result: ", JSON.stringify(result))
+            })
+
+            res.write('Hello World')
+            // res.write('Hello World')
+    // End the response
+    res.end()
+})
+
+// Set up our server so it will listen on the port
+server.listen(port, function (error) {
+
+    // Checking any error occur while listening on port
+    if (error) {
+        console.log('Something went wrong', error);
+    }
+    // Else sent message of listening
+    else {
+        console.log('Server is listening on port' + port);
+    }
+})
